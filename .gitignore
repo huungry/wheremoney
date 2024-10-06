@@ -1,0 +1,15 @@
+*.csv
+*.numbers
+
+/.bsp
+/.metals
+/.scala-build
+/.vscode
+
+/inputs
+/outputs
+.numbers
+
+config.json
+
+.DS_Store
