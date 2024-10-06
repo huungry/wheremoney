@@ -21,6 +21,12 @@ object Utils {
       dir.listFiles.filter(_.isFile).map(_.getName.toUpperCase).filter(_.endsWith(".CSV")).toList
     else List.empty
 
+  def listOutputCsvFiles: List[String] =
+    val dir = new File("./outputs")
+    if dir.exists && dir.isDirectory then
+      dir.listFiles.filter(_.isFile).map(_.getName.toUpperCase).filter(_.endsWith("_OUT.CSV")).toList
+    else List.empty
+
   def findLastProceccedDate(
       bankName: BankName,
       dateFormatter: DateTimeFormatter = DateTimeFormatter.ISO_DATE
