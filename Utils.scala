@@ -45,6 +45,7 @@ object Utils {
           Some(LastProcessedDate(LocalDate.parse(date)))
         case _ =>
           println(s"[$bankName] No last processed date found")
+          reader.close()
           None
     }
   }
