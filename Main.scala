@@ -5,48 +5,26 @@
 
 package com.hungry.wheremoney
 
-import com.github.tototoshi.csv.*
+import com.hungry.wheremoney.Utils.*
 
-import java.io.File
-import java.time.LocalDate
-import java.time.YearMonth
-import java.time.format.DateTimeFormatter
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
-import Transaction.*
-import Category.*
-import Utils.*
+import Analyser.*
+import Parser.*
 
-@main def run() =
-
-  println("Parsing config... 📜")
-  val config = Config.unsafeParse()
-  logGreen("Config parsed successfully ✅")
-
-  println("Building categories... 🏗")
-  val categories = CategoryBuilder(config).unsafeBuild()
-  logGreen("Categories built successfully ✅")
-
-  println("Building categorizer... 🏗")
-  val categorizer = Categorizer(categories)
-  logGreen("Categorizer built successfully ✅")
-
-  println("Building banks handler... 🏗")
-  val bankHandler = BankHandler(categorizer)
-  logGreen("Banks handler built successfully ✅")
-  import bankHandler.*
-
-  logGreen("Starting... 🚀")
-
-  val listInputCsvFiles = Utils.listInputCsvFiles
-  val banksToProcess: List[SupportedBank] = listInputCsvFiles.flatMap { fileName =>
-    SupportedBank.values.find(bank => fileName.replace(".CSV", "") == (bank.name.toString()))
-  }
-
-  logGreen(s"Found input files for banks: [${banksToProcess.mkString(", ")}]")
-
-  banksToProcess.map(processBankData)
-
-  logGreen("Finished! 🏁")
+def main(args: Array[String]): Unit =
+  println(args.mkString("App called with arguments: ", ", ", ""))
+  if args.exists(_.equalsIgnoreCase("analysis")) then
+    args.find(_.startsWith("eurRate")).map(_.split("=")(1)) match
+      case None =>
+        logYellow("No EUR rate provided, using default 4.30. You can provide a custom rate with argument eurRate=4.30")
+        Analyser.run(BigDecimal(4.30))
+      case Some(value) =>
+        Try(BigDecimal(value)) match
+          case Failure(exception) =>
+            logRed(s"Invalid EUR rate provided: $value. Please use a valid argument, for example eurRate=4.30")
+          case Success(eurRate) =>
+            Analyser.run(eurRate)
+  else Parser.run()
