@@ -96,4 +96,5 @@ object Utils {
 
   def logGreen(message: String): Unit = println(Console.GREEN + message + Console.RESET)
   def logRed(message: String): Unit = println(Console.RED + message + Console.RESET)
+  def logYellow(message: String): Unit = println(Console.YELLOW + message + Console.RESET)
 }

@@ -17,9 +17,10 @@ import Category.*
 import Utils.*
 
 object Analyser:
-  def run() =
+  def run(eurRate: BigDecimal) =
+    logGreen(s"Running analysis with EUR rate: $eurRate")
     val listOutputCsvFiles = Utils.listOutputCsvFiles
-    println(s"Found output files: [${listOutputCsvFiles.mkString(", ")}]")
+    logGreen(s"Found output files: [${listOutputCsvFiles.mkString(", ")}]")
 
     val transactions: Map[BankName, List[Transaction]] = listOutputCsvFiles.map { fileName =>
       println(s"Processing $fileName... 🔄")
@@ -54,23 +55,13 @@ object Analyser:
 
     val firstYearMonth = transactions.values.flatten.map(t => YearMonth.from(t.date)).min
     val lastYearMonth = transactions.values.flatten.map(t => YearMonth.from(t.date)).max
-
     val allYearMonths = (firstYearMonth.getYear to lastYearMonth.getYear).flatMap { year =>
       (1 to 12).map { month =>
         YearMonth.of(year, month)
       }
     }
 
-    val groupedByCategory: Map[BankName, Map[Category, List[Transaction]]] = transactions
-      .map { case (bankName, data) =>
-        val missingCategories = Category.values.toSet -- data.map(_.category).toSet
-        val grouped: Map[Category, List[Transaction]] = data.groupBy(_.category)
-        val missing: Map[Category, List[Transaction]] = missingCategories.map { category =>
-          category -> List.empty[Transaction]
-        }.toMap
-        bankName -> (grouped ++ missing)
-      }
-
+    val groupedByCategory: Map[BankName, Map[Category, List[Transaction]]] = transactions.mapValues(_.groupBy(_.category)).toMap
     val groupedByMonth: Map[BankName, Map[Category, Map[YearMonth, List[Transaction]]]] = groupedByCategory.map {
       case (bankName, byCategory) =>
         bankName -> (byCategory.mapValues { transactions =>
@@ -83,27 +74,32 @@ object Analyser:
       override val delimiter = ';'
     })
 
-    writer.writeRow(List("", "") ::: allYearMonths.map(_.toString).toList)
+    // Header row
+    writer.writeRow(List(s"Euro rate: $eurRate", "") ::: allYearMonths.map(_.toString).toList)
 
     val categories = Category.values.toList.sortWith(_.name < _.name)
-
     groupedByMonth.map { case (bankName, data) =>
       categories.map { category =>
         writer.writeRow(
           List(bankName, category.toString()) ::: allYearMonths.map { yearMonth =>
             val transactionsFromMonthFromCategory = data.getOrElse(category, Map.empty).getOrElse(yearMonth, List.empty)
-            (transactionsFromMonthFromCategory
+
+            val plnSum = transactionsFromMonthFromCategory
               .filter(_.currency == "PLN")
               .map(_.amount)
-              .sum +
-              transactionsFromMonthFromCategory
-                .filter(_.currency == "EUR")
-                .map(_.amount)
-                .sum * BigDecimal(4.30)).toString()
+              .sum
+
+            val eurSum = transactionsFromMonthFromCategory
+              .filter(_.currency == "EUR")
+              .map(_.amount)
+              .sum * eurRate
+
+            (plnSum + eurSum).setScale(2, BigDecimal.RoundingMode.HALF_DOWN).toString()
           }.toList
         )
       }
     }
 
     writer.close()
-    logGreen(s"Summary written to ${fileOut.getAbsolutePath}")
+
+    logGreen(s"Summary exported! 🚀")
