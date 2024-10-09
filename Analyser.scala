@@ -50,6 +50,7 @@ object Analyser:
             None
         }
 
+      reader.close()
       BankName(fileName.replace("_OUT.CSV", "")) -> transactions
     }.toMap
 
@@ -101,5 +102,4 @@ object Analyser:
     }
 
     writer.close()
-
     logGreen(s"Summary exported! 🚀")
