@@ -25,6 +25,7 @@ Categories with keywords are customizable in `./config.json` file.
 - ING - save as _`./inputs/ing.csv`_
 - NEST - save as _`./inputs/nest.csv`_
 - NEST EUR - save as _`./inputs/nest_eur.csv`_
+- Revolut - save as _`./inputs/revolut.csv`_
 
 ## Usage
 
