@@ -35,7 +35,7 @@ Categories with keywords are customizable in `./config.json` file.
 4. Run _`scala-cli .`_. It will read CSV files from _`./inputs`_ folder and generate categorized .csv files in _`./outputs`_ folder.
 5. Some transactions may not be categorized. You can manually categorize them in _`./outputs/BANK_OUT.csv`_ file.
 6. Program runs in append mode, so you can run it multiple times and it will append new transactions to existing files. It checks for last processed date in _`./outputs/BANK_OUT.csv`_ file and skips transactions before and on that date.
-7. Run _`scala-cli . -- analysis`_ with optional _`eurRate=4.30`_ to generate monthly summary data. It will generate _`./outputs/SUMMARY.csv`_ file.
+7. Run _`scala-cli . -- analysis`_ with optional _`eurRate=4.30 usdRate=3.80`_ to generate monthly summary data. It will generate _`./outputs/SUMMARY.csv`_ file.
 
 ## Changing predefined categories
 

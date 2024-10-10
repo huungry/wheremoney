@@ -17,10 +17,10 @@ import Category.*
 import Utils.*
 
 object Analyser:
-  def run(eurRate: BigDecimal) =
-    logGreen(s"Running analysis with EUR rate: $eurRate")
+  def run(eurRate: BigDecimal, usdRate: BigDecimal) =
+    logGreen(Console.BOLD + s"📊 Running analysis with EUR rate: $eurRate and USD rate: $usdRate 📊" + Console.RESET)
     val listOutputCsvFiles = Utils.listOutputCsvFiles
-    logGreen(s"Found output files: [${listOutputCsvFiles.mkString(", ")}]")
+    println(s"Found output files: [${listOutputCsvFiles.mkString(", ")}]")
 
     val transactions: Map[BankName, List[Transaction]] = listOutputCsvFiles.map { fileName =>
       println(s"Processing $fileName... 🔄")
@@ -95,7 +95,12 @@ object Analyser:
               .map(_.amount)
               .sum * eurRate
 
-            (plnSum + eurSum).setScale(2, BigDecimal.RoundingMode.HALF_DOWN).toString()
+            val usdSum = transactionsFromMonthFromCategory
+              .filter(_.currency == "USD")
+              .map(_.amount)
+              .sum * usdRate
+
+            (plnSum + eurSum + usdSum).setScale(2, BigDecimal.RoundingMode.HALF_DOWN).toString()
           }.toList
         )
       }

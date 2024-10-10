@@ -18,37 +18,38 @@ import Model.*
 class BankHandler(categorizer: Categorizer) {
   enum SupportedBank(
       val name: BankName,
-      val csvLinesToDrop: Int,
       val csvInputDelimiter: Char,
       val parser: (BankName, CsvRow, Option[LastProcessedDate]) => Option[Transaction]
   ):
     case MILLENIUM
         extends SupportedBank(
           name = BankName("MILLENIUM"),
-          csvLinesToDrop = 1,
           csvInputDelimiter = ',',
           parser = milleniumParser
         )
     case ING
         extends SupportedBank(
           name = BankName("ING"),
-          csvLinesToDrop = 21,
           csvInputDelimiter = ';',
           parser = ingParser
         )
     case NEST
         extends SupportedBank(
           name = BankName("NEST"),
-          csvLinesToDrop = 7,
           csvInputDelimiter = ',',
           parser = nestParser
         )
     case NEST_EUR
         extends SupportedBank(
           name = BankName("NEST_EUR"),
-          csvLinesToDrop = 7,
           csvInputDelimiter = ',',
           parser = nestParser
+        )
+    case REVOLUT
+        extends SupportedBank(
+          name = BankName("REVOLUT"),
+          csvInputDelimiter = ',',
+          parser = revolutParser
         )
 
   // Parsers for each supported bank
@@ -68,7 +69,7 @@ class BankHandler(categorizer: Categorizer) {
         )
 
       case invalidRow =>
-        println(Console.RED + s"[ING] Invalid row [$invalidRow] - skipping" + Console.RESET)
+        logInvalidRow(bankName, invalidRow)
         None
 
   def milleniumParser(bankName: BankName, csvLine: CsvRow, lastProcessedDateOpt: Option[LastProcessedDate]): Option[Transaction] =
@@ -86,7 +87,7 @@ class BankHandler(categorizer: Categorizer) {
         )
 
       case invalidRow =>
-        println(Console.RED + s"[Millenium] Invalid row [$invalidRow] - skipping" + Console.RESET)
+        logInvalidRow(bankName, invalidRow)
         None
 
   def nestParser(bankName: BankName, csvLine: CsvRow, lastProcessedDateOpt: Option[LastProcessedDate]): Option[Transaction] =
@@ -104,8 +105,29 @@ class BankHandler(categorizer: Categorizer) {
         )
 
       case invalid =>
-        println(Console.RED + s"[NEST] Invalid row $invalid - skipping" + Console.RESET)
+        logInvalidRow(bankName, invalid)
         None
+
+  def revolutParser(bankName: BankName, csvLine: CsvRow, lastProcessedDateOpt: Option[LastProcessedDate]): Option[Transaction] =
+    csvLine.asListString match
+      case _ :: _ :: date :: _ :: description :: amount :: fee :: currency :: _ =>
+        buildTransaction(
+          bank = SupportedBank.REVOLUT,
+          dateTry = Try(LocalDate.parse(date.split(" ")(0))),
+          account = "",
+          receiver = "",
+          description = description,
+          amountTry = Try(BigDecimal(amount)),
+          currency = currency,
+          onlyAfter = lastProcessedDateOpt
+        )
+
+      case invalid =>
+        logInvalidRow(bankName, invalid)
+        None
+
+  private def logInvalidRow(bank: BankName, invalidRow: List[String]): Unit =
+    logYellow(s"[$bank] Skipping non matching row: [$invalidRow]")
 
   // Process data for each supported bank
 
@@ -120,7 +142,7 @@ class BankHandler(categorizer: Categorizer) {
     })
     val data = reader
       .all()
-      .drop(bank.csvLinesToDrop)
+      .drop(1)
       .flatMap(csvLine => bank.parser(bank.name, CsvRow(csvLine), lastProcessedDateOpt))
     reader.close()
     logUncategorized(data, bank.name)

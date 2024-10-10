@@ -17,14 +17,30 @@ import Parser.*
 def main(args: Array[String]): Unit =
   println(args.mkString("App called with arguments: ", ", ", ""))
   if args.exists(_.equalsIgnoreCase("analysis")) then
-    args.find(_.startsWith("eurRate")).map(_.split("=")(1)) match
-      case None =>
-        logYellow("No EUR rate provided, using default 4.30. You can provide a custom rate with argument eurRate=4.30")
-        Analyser.run(BigDecimal(4.30))
-      case Some(value) =>
-        Try(BigDecimal(value)) match
-          case Failure(exception) =>
-            logRed(s"Invalid EUR rate provided: $value. Please use a valid argument, for example eurRate=4.30")
-          case Success(eurRate) =>
-            Analyser.run(eurRate)
+    val eurRateRegex = """eurRate=(\d+(\.\d+)?)""".r
+    val usdRateRegex = """usdRate=(\d+(\.\d+)?)""".r
+
+    val eurRate = args
+      .find(eurRateRegex.findFirstIn(_).isDefined)
+      .flatMap {
+        case eurRateRegex(rate, _) => Try(BigDecimal(rate)).toOption
+        case _                     => None
+      }
+      .getOrElse {
+        logYellow("No valid EUR rate provided, using default 4.30. Use 'eurRate=4.30' to provide a custom rate.")
+        BigDecimal(4.30)
+      }
+
+    val usdRate = args
+      .find(usdRateRegex.findFirstIn(_).isDefined)
+      .flatMap {
+        case usdRateRegex(rate, _) => Try(BigDecimal(rate)).toOption
+        case _                     => None
+      }
+      .getOrElse {
+        logYellow("No valid USD rate provided, using default 3.80. Use 'usdRate=3.80' to provide a custom rate.")
+        BigDecimal(3.80)
+      }
+
+    Analyser.run(eurRate, usdRate)
   else Parser.run()
