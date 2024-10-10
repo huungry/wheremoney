@@ -110,7 +110,7 @@ class BankHandler(categorizer: Categorizer) {
 
   def revolutParser(bankName: BankName, csvLine: CsvRow, lastProcessedDateOpt: Option[LastProcessedDate]): Option[Transaction] =
     csvLine.asListString match
-      case _ :: _ :: date :: _ :: description :: amount :: fee :: currency :: _ =>
+      case _ :: _ :: date :: _ :: description :: amount :: _ :: currency :: _ =>
         buildTransaction(
           bank = SupportedBank.REVOLUT,
           dateTry = Try(LocalDate.parse(date.split(" ")(0))),
